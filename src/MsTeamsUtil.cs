@@ -50,7 +50,7 @@ public class MsTeamsUtil : IMsTeamsUtil
             return ValueTask.CompletedTask;
 
         if (channel == null)
-            channel = "errors";
+            channel = "Errors";
 
         title ??= "Exception thrown";
 
@@ -95,7 +95,7 @@ public class MsTeamsUtil : IMsTeamsUtil
 
     private bool IsChannelEnabled(string channel)
     {
-        var enabled = _config.GetValue<bool>($"MsTeams:{channel}:Enable");
+        var enabled = _config.GetValueStrict<bool>($"MsTeams:{channel}:Enabled");
 
         if (!enabled)
             _logger.LogDebug("Skipping sending MSTeams notification due to channel config");

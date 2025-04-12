@@ -95,7 +95,7 @@ public class MsTeamsUtil : IMsTeamsUtil
 
     private bool IsChannelEnabled(string channel)
     {
-        var enabled = _config.GetValueStrict<bool>($"MsTeams:{channel}:Enabled");
+        var enabled = _config.GetValue<bool>($"MsTeams:{channel}:Enable");
 
         if (!enabled)
             _logger.LogDebug("Skipping sending MSTeams notification due to channel config");

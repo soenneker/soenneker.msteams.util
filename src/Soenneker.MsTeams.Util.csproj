@@ -44,6 +44,6 @@
     <ItemGroup>
         <PackageReference Include="Soenneker.AdaptiveCard.Util" Version="3.0.168" />
         <PackageReference Include="Soenneker.Messages.MsTeams" Version="3.0.126" />
-        <PackageReference Include="Soenneker.ServiceBus.Transmitter" Version="3.0.3162" />
+        <PackageReference Include="Soenneker.ServiceBus.Transmitter" Version="3.0.3164" />
     </ItemGroup>
 </Project>

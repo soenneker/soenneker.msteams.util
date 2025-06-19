@@ -5,33 +5,43 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Soenneker.AdaptiveCard.Util.Abstract;
+using Soenneker.Dtos.AdaptiveCard.Attachments;
+using Soenneker.Dtos.MsTeams.Card;
 using Soenneker.Enums.DeployEnvironment;
 using Soenneker.Extensions.Configuration;
+using Soenneker.Extensions.Task;
 using Soenneker.Messages.MsTeams;
+using Soenneker.MsTeams.Sender.Abstract;
 using Soenneker.MsTeams.Util.Abstract;
 using Soenneker.ServiceBus.Transmitter.Abstract;
 
 namespace Soenneker.MsTeams.Util;
 
 ///<inheritdoc cref="IMsTeamsUtil"/>
-public class MsTeamsUtil : IMsTeamsUtil
+public sealed class MsTeamsUtil : IMsTeamsUtil
 {
     private readonly IConfiguration _config;
     private readonly IServiceBusTransmitter _serviceBusTransmitter;
     private readonly ILogger<MsTeamsUtil> _logger;
     private readonly IAdaptiveCardUtil _adaptiveCardUtil;
+    private readonly IMsTeamsSender _msTeamsSender;
 
-    public MsTeamsUtil(IConfiguration config, IServiceBusTransmitter servicesBusTransmitter, IAdaptiveCardUtil adaptiveCardUtil,
-        ILogger<MsTeamsUtil> logger)
+    private readonly bool _useQueue;
+
+    public MsTeamsUtil(IConfiguration config, IServiceBusTransmitter servicesBusTransmitter, IAdaptiveCardUtil adaptiveCardUtil, ILogger<MsTeamsUtil> logger,
+        IMsTeamsSender msTeamsSender)
     {
         _logger = logger;
+        _msTeamsSender = msTeamsSender;
         _config = config;
         _serviceBusTransmitter = servicesBusTransmitter;
         _adaptiveCardUtil = adaptiveCardUtil;
+
+        _useQueue = config.GetValue<bool>("MsTeams:UseQueue");
     }
 
-    public ValueTask SendMessage(string title, string channel, string? summary = null, Dictionary<string, string?>? facts = null, Exception? e = null, string? additionalBody = null,
-        bool skipLocal = false, CancellationToken cancellationToken = default)
+    public ValueTask SendMessage(string title, string channel, string? summary = null, Dictionary<string, string?>? facts = null, Exception? e = null,
+        string? additionalBody = null, bool skipLocal = false, CancellationToken cancellationToken = default)
     {
         if (ShouldSkipBecauseLocal(skipLocal))
             return ValueTask.CompletedTask;
@@ -41,10 +51,14 @@ public class MsTeamsUtil : IMsTeamsUtil
 
         AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.Build(title, summary, facts, e, additionalBody);
 
-        return SendToServiceBus(card, channel, cancellationToken);
+        if (_useQueue)
+            return PlaceOnQueue(card, channel, cancellationToken);
+
+        return SendImmediately(card, channel, cancellationToken);
     }
 
-    public ValueTask SendMessage(Exception e, string? title = null, string? channel = null, string? summary = null, Dictionary<string, string?>? facts = null, bool skipLocal = false, CancellationToken cancellationToken = default)
+    public ValueTask SendMessage(Exception e, string? title = null, string? channel = null, string? summary = null, Dictionary<string, string?>? facts = null,
+        bool skipLocal = false, CancellationToken cancellationToken = default)
     {
         if (ShouldSkipBecauseLocal(skipLocal))
             return ValueTask.CompletedTask;
@@ -59,10 +73,14 @@ public class MsTeamsUtil : IMsTeamsUtil
 
         AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.Build(title, summary, facts, e);
 
-        return SendToServiceBus(card, channel, cancellationToken);
+        if (_useQueue)
+            return PlaceOnQueue(card, channel, cancellationToken);
+
+        return SendImmediately(card, channel, cancellationToken);
     }
 
-    public ValueTask SendMessage<T>(string title, string? summary, List<T> items, string channel, bool skipLocal = false, CancellationToken cancellationToken = default)
+    public ValueTask SendMessage<T>(string title, string? summary, List<T> items, string channel, bool skipLocal = false,
+        CancellationToken cancellationToken = default)
     {
         if (ShouldSkipBecauseLocal(skipLocal))
             return ValueTask.CompletedTask;
@@ -72,7 +90,10 @@ public class MsTeamsUtil : IMsTeamsUtil
 
         AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.BuildTable(title, items, summary);
 
-        return SendToServiceBus(card, channel, cancellationToken);
+        if (_useQueue)
+            return PlaceOnQueue(card, channel, cancellationToken);
+
+        return SendImmediately(card, channel, cancellationToken);
     }
 
     public ValueTask SendMessageCard(AdaptiveCards.AdaptiveCard card, string channel, bool skipLocal = false, CancellationToken cancellationToken = default)
@@ -83,10 +104,30 @@ public class MsTeamsUtil : IMsTeamsUtil
         if (!IsChannelEnabled(channel))
             return ValueTask.CompletedTask;
 
-        return SendToServiceBus(card, channel, cancellationToken);
+        if (_useQueue)
+            return PlaceOnQueue(card, channel, cancellationToken);
+
+        return SendImmediately(card, channel, cancellationToken);
     }
 
-    private ValueTask SendToServiceBus(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken = default)
+    private async ValueTask SendImmediately(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken = default)
+    {
+        var msTeamsCard = new MsTeamsCard
+        {
+            Type = "message",
+            Attachments =
+            [
+                new AdaptiveCardAttachments
+                {
+                    Content = card
+                }
+            ]
+        };
+
+        await _msTeamsSender.SendCard(msTeamsCard, channel, cancellationToken).NoSync();
+    }
+
+    private ValueTask PlaceOnQueue(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken = default)
     {
         var message = new MsTeamsMessage(card, channel);
 

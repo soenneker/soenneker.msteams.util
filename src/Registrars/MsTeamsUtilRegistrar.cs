@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Soenneker.AdaptiveCard.Util.Registrars;
+using Soenneker.MsTeams.Sender.Registrars;
 using Soenneker.MsTeams.Util.Abstract;
 using Soenneker.ServiceBus.Transmitter.Registrars;
 
@@ -16,7 +17,10 @@ public static class MsTeamsUtilRegistrar
     /// </summary>
     public static IServiceCollection AddMsTeamsUtilAsSingleton(this IServiceCollection services)
     {
-        services.AddAdaptiveCardUtilAsSingleton().AddServiceBusTransmitterAsSingleton().TryAddSingleton<IMsTeamsUtil, MsTeamsUtil>();
+        services.AddAdaptiveCardUtilAsSingleton()
+                .AddServiceBusTransmitterAsSingleton()
+                .AddMsTeamsSenderAsSingleton()
+                .TryAddSingleton<IMsTeamsUtil, MsTeamsUtil>();
 
         return services;
     }
@@ -26,7 +30,7 @@ public static class MsTeamsUtilRegistrar
     /// </summary>
     public static IServiceCollection AddMsTeamsUtilAsScoped(this IServiceCollection services)
     {
-        services.AddAdaptiveCardUtilAsScoped().AddServiceBusTransmitterAsScoped().TryAddScoped<IMsTeamsUtil, MsTeamsUtil>();
+        services.AddAdaptiveCardUtilAsScoped().AddServiceBusTransmitterAsScoped().AddMsTeamsSenderAsSingleton().TryAddScoped<IMsTeamsUtil, MsTeamsUtil>();
 
         return services;
     }

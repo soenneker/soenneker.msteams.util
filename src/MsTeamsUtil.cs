@@ -176,7 +176,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         return _channelEnabledCache.GetOrAdd(channel, static (ch, state) =>
         {
             MsTeamsUtil self = state!;
-            bool enabled = self._config.GetValueStrict<bool>($"{_msTeamsPrefix}{ch}:Enabled");
+            var enabled = self._config.GetValueStrict<bool>($"{_msTeamsPrefix}{ch}:Enabled");
 
             if (!enabled && self._logger.IsEnabled(LogLevel.Debug))
                 Logs.LogSkippingChannel(self._logger, null);

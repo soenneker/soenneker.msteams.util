@@ -15,6 +15,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Soenneker.Utils.Environment;
 
 namespace Soenneker.MsTeams.Util;
 
@@ -167,7 +168,27 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
 
     private ValueTask PlaceOnQueue(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken)
     {
-        var message = new MsTeamsMessage(card, channel);
+        var message = new MsTeamsMessage
+        {
+            Channel = channel,
+            MsTeamsCard = new MsTeamsCard
+            {
+                Type = "message",
+                Attachments =
+                [
+                    new AdaptiveCardAttachments
+                    {
+                        Content = card
+                    }
+                ]
+            },
+            NewtonsoftSerialize = true,
+            Sender = EnvironmentUtil.GetMachineName(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            Queue = "msteams",
+            Id = Guid.NewGuid().ToString(),
+            Type = "msteams"
+        };
         return _serviceBusTransmitter.SendMessage(message, cancellationToken: cancellationToken);
     }
 

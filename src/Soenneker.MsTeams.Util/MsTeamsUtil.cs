@@ -206,6 +206,9 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         }, this);
     }
 
+    /// <summary>
+    /// Releases resources used by the current instance.
+    /// </summary>
     public void Dispose()
     {
         _reloadRegistration?.Dispose();

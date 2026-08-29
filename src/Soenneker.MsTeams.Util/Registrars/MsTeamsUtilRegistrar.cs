@@ -15,6 +15,8 @@ public static class MsTeamsUtilRegistrar
     /// <summary>
     /// Adds <see cref="IMsTeamsUtil"/> as a singleton service. <para/>
     /// </summary>
+    /// <param name="services">Service collection that receives the registration.</param>
+    /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddMsTeamsUtilAsSingleton(this IServiceCollection services)
     {
         services.AddAdaptiveCardUtilAsSingleton()
@@ -28,6 +30,8 @@ public static class MsTeamsUtilRegistrar
     /// <summary>
     /// Adds <see cref="IMsTeamsUtil"/> as a scoped service. <para/>
     /// </summary>
+    /// <param name="services">Service collection that receives the registration.</param>
+    /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddMsTeamsUtilAsScoped(this IServiceCollection services)
     {
         services.AddAdaptiveCardUtilAsScoped().AddServiceBusTransmitterAsScoped().AddMsTeamsSenderAsSingleton().TryAddScoped<IMsTeamsUtil, MsTeamsUtil>();

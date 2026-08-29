@@ -19,7 +19,7 @@ using Soenneker.Utils.Environment;
 
 namespace Soenneker.MsTeams.Util;
 
-///<inheritdoc cref="IMsTeamsUtil"/>
+/// <inheritdoc cref="IMsTeamsUtil"/>
 public sealed class MsTeamsUtil : IMsTeamsUtil
 {
     private readonly IConfiguration _config;

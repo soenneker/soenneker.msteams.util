@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Soenneker.MsTeams.Util;
 
-internal class Logs
+internal static class Logs
 {
     public static readonly Action<ILogger, Exception?> LogSkippingChannel = LoggerMessage.Define(LogLevel.Debug, new EventId(1, nameof(LogSkippingChannel)),
         "Skipping sending MSTeams notification due to channel config");

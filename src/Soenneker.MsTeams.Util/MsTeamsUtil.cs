@@ -19,7 +19,6 @@ using Soenneker.Utils.Environment;
 
 namespace Soenneker.MsTeams.Util;
 
-/// <inheritdoc cref="IMsTeamsUtil"/>
 public sealed class MsTeamsUtil : IMsTeamsUtil
 {
     private readonly IConfiguration _config;
@@ -28,7 +27,6 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
     private readonly IAdaptiveCardUtil _adaptiveCardUtil;
     private readonly IMsTeamsSender _msTeamsSender;
 
-    private readonly bool _useQueue;
     private readonly bool _isLocal;
 
     private readonly ConcurrentDictionary<string, bool> _channelEnabledCache = new(StringComparer.OrdinalIgnoreCase);
@@ -50,24 +48,9 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         _serviceBusTransmitter = servicesBusTransmitter;
         _adaptiveCardUtil = adaptiveCardUtil;
 
-        _useQueue = config.GetValue<bool>(_useQueueKey);
-
-        // Cache local env once (avoid string compare + config lookup each send)
         _isLocal = string.Equals(config.GetValueStrict<string>(_environmentKey), DeployEnvironment.Local, StringComparison.OrdinalIgnoreCase);
 
-        // If configuration supports reload, clear the per-channel cache on change
-        // so runtime toggles still work without repeated config reads.
-        IChangeToken token = config.GetReloadToken();
-        _reloadRegistration = token.RegisterChangeCallback(static state =>
-        {
-            var self = (MsTeamsUtil)state!;
-            self._channelEnabledCache.Clear();
-
-            // Re-register (reload tokens are one-shot)
-            self._reloadRegistration?.Dispose();
-            self._reloadRegistration = self._config.GetReloadToken()
-                                           .RegisterChangeCallback(static s => ((MsTeamsUtil)s!)._channelEnabledCache.Clear(), self);
-        }, this);
+        _reloadRegistration = ChangeToken.OnChange(config.GetReloadToken, _channelEnabledCache.Clear);
     }
 
     public ValueTask SendMessage(string title, string channel, string? summary = null, Dictionary<string, string?>? facts = null, Exception? e = null,
@@ -86,7 +69,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
 
         AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.Build(title, summary, facts, e, additionalBody);
 
-        return _useQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
+        return UseQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
     }
 
     public ValueTask SendMessage(Exception e, string? title = null, string? channel = null, string? summary = null, Dictionary<string, string?>? facts = null,
@@ -108,7 +91,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
 
         AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.Build(title, summary, facts, e);
 
-        return _useQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
+        return UseQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
     }
 
     public ValueTask SendMessage<T>(string title, string? summary, List<T> items, string channel, bool skipLocal = false,
@@ -127,7 +110,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
 
         AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.BuildTable(title, items, summary);
 
-        return _useQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
+        return UseQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
     }
 
     public ValueTask SendMessageCard(AdaptiveCards.AdaptiveCard card, string channel, bool skipLocal = false, CancellationToken cancellationToken = default)
@@ -143,12 +126,11 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         if (!IsChannelEnabledCached(channel))
             return ValueTask.CompletedTask;
 
-        return _useQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
+        return UseQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
     }
 
-    private ValueTask SendImmediately(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken)
+    private async ValueTask SendImmediately(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken)
     {
-        // You’ll still allocate these payload objects; that’s unavoidable unless you change DTO shapes.
         var msTeamsCard = new MsTeamsCard
         {
             Type = "message",
@@ -161,9 +143,9 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
             ]
         };
 
-        // Avoid async state machine; wrap the returned task.
-        Task sendTask = _msTeamsSender.SendCard(msTeamsCard, channel, cancellationToken);
-        return new ValueTask(sendTask);
+        bool sent = await _msTeamsSender.SendCard(msTeamsCard, channel, cancellationToken).ConfigureAwait(false);
+        if (!sent)
+            throw new InvalidOperationException($"The Microsoft Teams card was not accepted for channel '{channel}'.");
     }
 
     private ValueTask PlaceOnQueue(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken)
@@ -194,6 +176,9 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
 
     private bool IsChannelEnabledCached(string channel)
     {
+        if (channel.Contains(':', StringComparison.Ordinal))
+            throw new InvalidOperationException("MS Teams channel names cannot contain configuration path separators.");
+
         return _channelEnabledCache.GetOrAdd(channel, static (ch, state) =>
         {
             MsTeamsUtil self = state!;
@@ -206,9 +191,8 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         }, this);
     }
 
-    /// <summary>
-    /// Releases resources used by the current instance.
-    /// </summary>
+    private bool UseQueue => _config.GetValue<bool>(_useQueueKey);
+
     public void Dispose()
     {
         _reloadRegistration?.Dispose();

@@ -48,4 +48,15 @@
         <PackageReference Include="Soenneker.MsTeams.Sender" Version="4.0.988" />
         <PackageReference Include="Soenneker.ServiceBus.Transmitter" Version="4.0.3944" />
     </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Soenneker.Enums.DeployEnvironment" Version="4.0.242" />
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.12" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.12" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
+        <PackageReference Include="Microsoft.Extensions.Primitives" Version="10.0.12" />
+        <PackageReference Include="Soenneker.Extensions.Configuration" Version="4.0.895" />
+    </ItemGroup>
 </Project>

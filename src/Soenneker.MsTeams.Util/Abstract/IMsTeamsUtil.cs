@@ -8,6 +8,9 @@ namespace Soenneker.MsTeams.Util.Abstract;
 /// <summary>
 /// A centralized utility for sending rich, configurable Adaptive Card messages to Microsoft Teams channels via a service bus, with environment-aware filtering and dynamic content generation.
 /// </summary>
+/// <remarks>
+/// Sending is skipped when MsTeams:Enabled is false or missing, or when the target channel is disabled.
+/// </remarks>
 public interface IMsTeamsUtil : IDisposable
 {
     /// <summary>

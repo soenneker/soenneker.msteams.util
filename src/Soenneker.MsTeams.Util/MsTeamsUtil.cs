@@ -19,7 +19,6 @@ using Soenneker.Utils.Environment;
 
 namespace Soenneker.MsTeams.Util;
 
-/// <inheritdoc cref="IMsTeamsUtil" />
 public sealed class MsTeamsUtil : IMsTeamsUtil
 {
     private readonly IConfiguration _config;
@@ -177,6 +176,9 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
 
     private bool IsChannelEnabledCached(string channel)
     {
+        if (!_config.GetValue<bool>("MsTeams:Enabled"))
+            return false;
+
         if (channel.Contains(':', StringComparison.Ordinal))
             throw new InvalidOperationException("MS Teams channel names cannot contain configuration path separators.");
 

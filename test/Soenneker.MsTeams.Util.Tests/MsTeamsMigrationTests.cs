@@ -12,7 +12,7 @@ using Soenneker.Dtos.MsTeams.Card;
 using Soenneker.Messages.MsTeams;
 using Soenneker.MsTeams.Sender.Abstract;
 using Soenneker.MsTeams.Util.Registrars;
-using Soenneker.ServiceBus.Message;
+using Soenneker.ServiceBus.Message.Abstract;
 using Soenneker.ServiceBus.Transmitter.Abstract;
 using Soenneker.Utils.Json;
 
@@ -42,6 +42,8 @@ public class MsTeamsMigrationTests
 
             // Ensure Teams registration preserves the application's primary JSON context.
             var services = new ServiceCollection();
+            services.AddSingleton<IConfiguration>(config);
+            services.AddLogging();
             services.AddSingleton<JsonSerializerContext>(Soenneker.AdaptiveCards.Dtos.SchemaJsonContext.Default);
             services.AddMsTeamsUtilAsSingleton();
             services.AddMsTeamsUtilAsSingleton();
@@ -49,7 +51,7 @@ public class MsTeamsMigrationTests
             if (!ReferenceEquals(provider.GetRequiredService<JsonSerializerContext>(), Soenneker.AdaptiveCards.Dtos.SchemaJsonContext.Default))
                 throw new Exception("The application's primary JSON context was replaced.");
             // Exercise the real transport serializer with the current Service Bus API.
-            var serializer = new ServiceBusMessageUtil(config, NullLogger<ServiceBusMessageUtil>.Instance);
+            var serializer = provider.GetRequiredService<IServiceBusMessageUtil>();
             var transport = serializer.BuildMessage(message, message.Type) ?? throw new Exception("Queue serialization failed.");
             MsTeamsMessage roundTrip = JsonUtil.Deserialize(transport.Body.ToString(), MsTeamsJsonContext.Default.MsTeamsMessage)!;
             if (roundTrip.Id != message.Id || roundTrip.Channel != message.Channel || roundTrip.CreatedAt != message.CreatedAt)

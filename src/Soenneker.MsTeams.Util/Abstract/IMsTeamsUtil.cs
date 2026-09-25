@@ -1,4 +1,5 @@
-﻿using System;
+using Soenneker.AdaptiveCards.Util;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,12 +49,13 @@ public interface IMsTeamsUtil : IDisposable
     /// <typeparam name="T">The type of items to include in the table.</typeparam>
     /// <param name="title">Page title, when available.</param>
     /// <param name="summary">An optional summary for the card.</param>
-    /// <param name="items">items to inspect or update.</param>
+    /// <param name="items">Rows to render in order.</param>
+    /// <param name="columns">Ordered column headings and typed value selectors; no runtime property discovery is performed.</param>
     /// <param name="channel">Delivery channel used to send the card.</param>
     /// <param name="skipLocal">If true, skips sending in a local environment.</param>
     /// <param name="cancellationToken">A token for cancelling the operation.</param>
     /// <returns>A task that completes when the message has been sent.</returns>
-    ValueTask SendMessage<T>(string title, string? summary, List<T> items, string channel, bool skipLocal = false, CancellationToken cancellationToken = default);
+    ValueTask SendMessage<T>(string title, string? summary, IReadOnlyList<T> items, IReadOnlyList<AdaptiveCardColumn<T>> columns, string channel, bool skipLocal = false, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Sends a fully-formed Adaptive Card directly to a specified Teams channel.
@@ -63,5 +65,5 @@ public interface IMsTeamsUtil : IDisposable
     /// <param name="skipLocal">If true, skips sending in a local environment.</param>
     /// <param name="cancellationToken">A token for cancelling the operation.</param>
     /// <returns>A task that completes when the message card has been sent.</returns>
-    ValueTask SendMessageCard(AdaptiveCards.AdaptiveCard card, string channel, bool skipLocal = false, CancellationToken cancellationToken = default);
+    ValueTask SendMessageCard(Soenneker.AdaptiveCards.Dtos.Models.AdaptiveCard card, string channel, bool skipLocal = false, CancellationToken cancellationToken = default);
 }

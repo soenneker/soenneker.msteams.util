@@ -1,6 +1,9 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
+using System.Text.Json.Serialization;
+using Soenneker.Messages.MsTeams;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Soenneker.AdaptiveCard.Util.Registrars;
+using Soenneker.AdaptiveCards.Util.Registrars;
 using Soenneker.MsTeams.Sender.Registrars;
 using Soenneker.MsTeams.Util.Abstract;
 using Soenneker.ServiceBus.Transmitter.Registrars;
@@ -19,7 +22,8 @@ public static class MsTeamsUtilRegistrar
     /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddMsTeamsUtilAsSingleton(this IServiceCollection services)
     {
-        services.AddAdaptiveCardUtilAsSingleton()
+        AddTeamsJsonContext(services);
+        services.AddAdaptiveCardsUtilAsSingleton()
                 .AddServiceBusTransmitterAsSingleton()
                 .AddMsTeamsSenderAsSingleton()
                 .TryAddSingleton<IMsTeamsUtil, MsTeamsUtil>();
@@ -34,8 +38,18 @@ public static class MsTeamsUtilRegistrar
     /// <returns>The same service collection, so additional registrations can be chained.</returns>
     public static IServiceCollection AddMsTeamsUtilAsScoped(this IServiceCollection services)
     {
-        services.AddAdaptiveCardUtilAsScoped().AddServiceBusTransmitterAsScoped().AddMsTeamsSenderAsSingleton().TryAddScoped<IMsTeamsUtil, MsTeamsUtil>();
+        AddTeamsJsonContext(services);
+        services.AddAdaptiveCardsUtilAsScoped().AddServiceBusTransmitterAsScoped().AddMsTeamsSenderAsSingleton().TryAddScoped<IMsTeamsUtil, MsTeamsUtil>();
 
         return services;
+    }
+    private static void AddTeamsJsonContext(IServiceCollection services)
+    {
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(JsonSerializerContext)
+            && ReferenceEquals(descriptor.ImplementationInstance, MsTeamsJsonContext.Default)))
+            return;
+
+        // Preserve the application's primary context (the last registration), while contributing Teams metadata.
+        services.Insert(0, ServiceDescriptor.Singleton<JsonSerializerContext>(MsTeamsJsonContext.Default));
     }
 }

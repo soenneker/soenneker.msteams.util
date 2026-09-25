@@ -1,7 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+using Soenneker.AdaptiveCards.Util;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
-using Soenneker.AdaptiveCard.Util.Abstract;
+using Soenneker.AdaptiveCards.Util.Abstract;
 using Soenneker.Dtos.AdaptiveCard.Attachments;
 using Soenneker.Dtos.MsTeams.Card;
 using Soenneker.Enums.DeployEnvironment;
@@ -24,7 +25,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
     private readonly IConfiguration _config;
     private readonly IServiceBusTransmitter _serviceBusTransmitter;
     private readonly ILogger<MsTeamsUtil> _logger;
-    private readonly IAdaptiveCardUtil _adaptiveCardUtil;
+    private readonly IAdaptiveCardsUtil _adaptiveCardUtil;
     private readonly IMsTeamsSender _msTeamsSender;
 
     private readonly bool _isLocal;
@@ -39,7 +40,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
     private const string _defaultErrorChannel = "Errors";
     private const string _defaultExceptionTitle = "Exception thrown";
 
-    public MsTeamsUtil(IConfiguration config, IServiceBusTransmitter servicesBusTransmitter, IAdaptiveCardUtil adaptiveCardUtil, ILogger<MsTeamsUtil> logger,
+    public MsTeamsUtil(IConfiguration config, IServiceBusTransmitter servicesBusTransmitter, IAdaptiveCardsUtil adaptiveCardUtil, ILogger<MsTeamsUtil> logger,
         IMsTeamsSender msTeamsSender)
     {
         _logger = logger;
@@ -67,7 +68,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         if (!IsChannelEnabledCached(channel))
             return ValueTask.CompletedTask;
 
-        AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.Build(title, summary, facts, e, additionalBody);
+        Soenneker.AdaptiveCards.Dtos.Models.AdaptiveCard card = _adaptiveCardUtil.Build(title, summary, facts, e, additionalBody);
 
         return UseQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
     }
@@ -89,12 +90,12 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         if (!IsChannelEnabledCached(channel))
             return ValueTask.CompletedTask;
 
-        AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.Build(title, summary, facts, e);
+        Soenneker.AdaptiveCards.Dtos.Models.AdaptiveCard card = _adaptiveCardUtil.Build(title, summary, facts, e);
 
         return UseQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
     }
 
-    public ValueTask SendMessage<T>(string title, string? summary, List<T> items, string channel, bool skipLocal = false,
+    public ValueTask SendMessage<T>(string title, string? summary, IReadOnlyList<T> items, IReadOnlyList<AdaptiveCardColumn<T>> columns, string channel, bool skipLocal = false,
         CancellationToken cancellationToken = default)
     {
         if (skipLocal && _isLocal)
@@ -108,12 +109,12 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         if (!IsChannelEnabledCached(channel))
             return ValueTask.CompletedTask;
 
-        AdaptiveCards.AdaptiveCard card = _adaptiveCardUtil.BuildTable(title, items, summary);
+        Soenneker.AdaptiveCards.Dtos.Models.AdaptiveCard card = _adaptiveCardUtil.BuildTable(title, items, columns, summary);
 
         return UseQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
     }
 
-    public ValueTask SendMessageCard(AdaptiveCards.AdaptiveCard card, string channel, bool skipLocal = false, CancellationToken cancellationToken = default)
+    public ValueTask SendMessageCard(Soenneker.AdaptiveCards.Dtos.Models.AdaptiveCard card, string channel, bool skipLocal = false, CancellationToken cancellationToken = default)
     {
         if (skipLocal && _isLocal)
         {
@@ -129,7 +130,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         return UseQueue ? PlaceOnQueue(card, channel, cancellationToken) : SendImmediately(card, channel, cancellationToken);
     }
 
-    private async ValueTask SendImmediately(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken)
+    private async ValueTask SendImmediately(Soenneker.AdaptiveCards.Dtos.Models.AdaptiveCard card, string channel, CancellationToken cancellationToken)
     {
         var msTeamsCard = new MsTeamsCard
         {
@@ -148,7 +149,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
             throw new InvalidOperationException($"The Microsoft Teams card was not accepted for channel '{channel}'.");
     }
 
-    private ValueTask PlaceOnQueue(AdaptiveCards.AdaptiveCard card, string channel, CancellationToken cancellationToken)
+    private ValueTask PlaceOnQueue(Soenneker.AdaptiveCards.Dtos.Models.AdaptiveCard card, string channel, CancellationToken cancellationToken)
     {
         var message = new MsTeamsMessage
         {
@@ -164,7 +165,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
                     }
                 ]
             },
-            NewtonsoftSerialize = true,
+            NewtonsoftSerialize = false,
             Sender = EnvironmentUtil.GetMachineName(),
             CreatedAt = DateTimeOffset.UtcNow,
             Queue = "msteams",

@@ -26,7 +26,7 @@ public class MsTeamsDisabledTests
 
         await util.SendMessage("Missing metrics", "Errors");
         await util.SendMessage(new InvalidOperationException("Missing metrics"));
-        await util.SendMessage("Missing metrics", null, new List<string> { "Buyer" }, "Errors");
+        await util.SendMessage("Missing metrics", null, new List<string> { "Buyer" }, [new Soenneker.AdaptiveCards.Util.AdaptiveCardColumn<string>("Name", item => item)], "Errors");
         await util.SendMessageCard(null!, "Errors");
     }
 }

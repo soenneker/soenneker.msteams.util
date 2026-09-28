@@ -46,7 +46,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Soenneker.AdaptiveCards.Util" Version="4.0.9" />
+        <PackageReference Include="Soenneker.AdaptiveCards.Util" Version="4.0.10" />
         <PackageReference Include="Soenneker.Messages.MsTeams" Version="4.0.404" />
         <PackageReference Include="Soenneker.MsTeams.Sender" Version="4.0.1004" />
         <PackageReference Include="Soenneker.ServiceBus.Message" Version="4.0.3163" />

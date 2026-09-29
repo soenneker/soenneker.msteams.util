@@ -50,7 +50,7 @@
         <PackageReference Include="Soenneker.Messages.MsTeams" Version="4.0.404" />
         <PackageReference Include="Soenneker.MsTeams.Sender" Version="4.0.1008" />
         <PackageReference Include="Soenneker.ServiceBus.Message" Version="4.0.3163" />
-        <PackageReference Include="Soenneker.ServiceBus.Transmitter" Version="4.0.3963" />
+        <PackageReference Include="Soenneker.ServiceBus.Transmitter" Version="4.0.3965" />
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Soenneker.Enums.DeployEnvironment" Version="4.0.244" />

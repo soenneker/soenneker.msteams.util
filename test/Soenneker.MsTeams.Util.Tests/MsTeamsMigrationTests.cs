@@ -23,7 +23,7 @@ public class MsTeamsMigrationTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task SendsGeneratedCardsThroughBothRoutes(bool useQueue)
+    public async ValueTask SendsGeneratedCardsThroughBothRoutes(bool useQueue)
     {
         var config = CreateConfig(useQueue);
         var transmitter = new CapturingTransmitter();
@@ -76,7 +76,7 @@ public class MsTeamsMigrationTests
     }
 
     [Test]
-    public async Task ExplicitColumnsAndExceptionDefaultsReachSender()
+    public async ValueTask ExplicitColumnsAndExceptionDefaultsReachSender()
     {
         var config = CreateConfig(false);
         var sender = new CapturingSender();

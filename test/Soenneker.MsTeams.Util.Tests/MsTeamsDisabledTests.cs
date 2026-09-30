@@ -11,7 +11,7 @@ public class MsTeamsDisabledTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task Disabled_teams_skips_all_send_overloads(bool useQueue)
+    public async ValueTask Disabled_teams_skips_all_send_overloads(bool useQueue)
     {
         IConfigurationRoot configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {

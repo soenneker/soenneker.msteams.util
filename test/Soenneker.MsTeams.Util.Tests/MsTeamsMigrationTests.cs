@@ -28,16 +28,18 @@ public class MsTeamsMigrationTests
         var config = CreateConfig(useQueue);
         var transmitter = new CapturingTransmitter();
         var sender = new CapturingSender();
-        using var util = new MsTeamsUtil(config, transmitter, new AdaptiveCardsUtil(config: config), NullLogger<MsTeamsUtil>.Instance, sender);
+        using var util = new MsTeamsUtil(config, transmitter, new AdaptiveCardsUtil(config: config),
+            NullLogger<MsTeamsUtil>.Instance, sender);
         using var cancellation = new CancellationTokenSource();
-        await util.SendMessage("Report", "Errors", facts: new Dictionary<string, string?> { ["Name"] = "Ada" }, cancellationToken: cancellation.Token);
+        await util.SendMessage("Report", "Errors", facts: new Dictionary<string, string?> { ["Name"] = "Ada" },
+            cancellationToken: cancellation.Token);
 
         MsTeamsCard card;
         if (useQueue)
         {
             MsTeamsMessage message = transmitter.Message ?? throw new Exception("Queue was not used.");
-            if (sender.Card is not null || message.NewtonsoftSerialize || message.Channel != "Errors" || message.Queue != "msteams"
-                || message.Type != "msteams" || transmitter.Token != cancellation.Token)
+            if (sender.Card is not null || message.Channel != "Errors" || message.Queue != "msteams" ||
+                message.Type != "msteams" || transmitter.Token != cancellation.Token)
                 throw new Exception("Queue routing or envelope changed.");
 
             // Ensure Teams registration preserves the application's primary JSON context.
@@ -48,13 +50,17 @@ public class MsTeamsMigrationTests
             services.AddMsTeamsUtilAsSingleton();
             services.AddMsTeamsUtilAsSingleton();
             using ServiceProvider provider = services.BuildServiceProvider();
-            if (!ReferenceEquals(provider.GetRequiredService<JsonSerializerContext>(), Soenneker.AdaptiveCards.Dtos.SchemaJsonContext.Default))
+            if (!ReferenceEquals(provider.GetRequiredService<JsonSerializerContext>(),
+                    Soenneker.AdaptiveCards.Dtos.SchemaJsonContext.Default))
                 throw new Exception("The application's primary JSON context was replaced.");
             // Exercise the real transport serializer with the current Service Bus API.
             var serializer = provider.GetRequiredService<IServiceBusMessageUtil>();
-            var transport = serializer.BuildMessage(message, message.Type) ?? throw new Exception("Queue serialization failed.");
-            MsTeamsMessage roundTrip = JsonUtil.Deserialize(transport.Body.ToString(), MsTeamsJsonContext.Default.MsTeamsMessage)!;
-            if (roundTrip.Id != message.Id || roundTrip.Channel != message.Channel || roundTrip.CreatedAt != message.CreatedAt)
+            var transport = serializer.BuildMessage(message, message.Type) ??
+                            throw new Exception("Queue serialization failed.");
+            MsTeamsMessage roundTrip =
+                JsonUtil.Deserialize(transport.Body.ToString(), MsTeamsJsonContext.Default.MsTeamsMessage)!;
+            if (roundTrip.Id != message.Id || roundTrip.Channel != message.Channel ||
+                roundTrip.CreatedAt != message.CreatedAt)
                 throw new Exception("Envelope did not round trip.");
             card = roundTrip.MsTeamsCard;
         }
@@ -68,10 +74,10 @@ public class MsTeamsMigrationTests
         using JsonDocument json = JsonDocument.Parse(JsonUtil.Serialize(card, MsTeamsJsonContext.Default.MsTeamsCard));
         JsonElement attachment = json.RootElement.GetProperty("attachments")[0];
         JsonElement content = attachment.GetProperty("content");
-        if (attachment.GetProperty("contentType").GetString() != "application/vnd.microsoft.card.adaptive"
-            || content.GetProperty("type").GetString() != "AdaptiveCard"
-            || content.GetProperty("body")[0].GetProperty("text").GetString() != "Report"
-            || content.GetProperty("msteams").GetProperty("width").GetString() != "Full")
+        if (attachment.GetProperty("contentType").GetString() != "application/vnd.microsoft.card.adaptive" ||
+            content.GetProperty("type").GetString() != "AdaptiveCard" ||
+            content.GetProperty("body")[0].GetProperty("text").GetString() != "Report" ||
+            content.GetProperty("msteams").GetProperty("width").GetString() != "Full")
             throw new Exception("Teams wire format changed.");
     }
 
@@ -80,23 +86,36 @@ public class MsTeamsMigrationTests
     {
         var config = CreateConfig(false);
         var sender = new CapturingSender();
-        using var util = new MsTeamsUtil(config, new CapturingTransmitter(), new AdaptiveCardsUtil(config: config), NullLogger<MsTeamsUtil>.Instance, sender);
-        await util.SendMessage("Table", null, new[] { 42 }, [new AdaptiveCardColumn<int>("Count", item => item.ToString())], "Errors");
-        if (sender.Card!.Attachments[0].Content!.Body.Value[2].AsVariant2().Columns.Value[0].Items.Value[0].AsVariant16().Text != "42")
+        using var util = new MsTeamsUtil(config, new CapturingTransmitter(), new AdaptiveCardsUtil(config: config),
+            NullLogger<MsTeamsUtil>.Instance, sender);
+        await util.SendMessage("Table", null, new[] { 42 },
+            [new AdaptiveCardColumn<int>("Count", item => item.ToString())], "Errors");
+        if (sender.Card!.Attachments[0].Content!.Body.Value[2].AsVariant2().Columns.Value[0].Items.Value[0]
+                  .AsVariant16().Text != "42")
             throw new Exception("Table selector was not applied.");
         await util.SendMessage(new InvalidOperationException("Details"));
-        if (sender.Channel != "Errors" || sender.Card!.Attachments[0].Content!.Body.Value[0].AsVariant16().Text != "Exception thrown")
+        if (sender.Channel != "Errors" ||
+            sender.Card!.Attachments[0].Content!.Body.Value[0].AsVariant16().Text != "Exception thrown")
             throw new Exception("Exception defaults changed.");
         sender.Accept = false;
-        try { await util.SendMessage("Rejected", "Errors"); }
-        catch (InvalidOperationException) { return; }
+        try
+        {
+            await util.SendMessage("Rejected", "Errors");
+        }
+        catch (InvalidOperationException)
+        {
+            return;
+        }
+
         throw new Exception("Rejected sends must fail.");
     }
 
-    private static IConfigurationRoot CreateConfig(bool useQueue) => new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-    {
-        ["Environment"] = "Local", ["MsTeams:Enabled"] = "true", ["MsTeams:Errors:Enabled"] = "true", ["MsTeams:UseQueue"] = useQueue.ToString()
-    }).Build();
+    private static IConfigurationRoot CreateConfig(bool useQueue) => new ConfigurationBuilder().AddInMemoryCollection(
+        new Dictionary<string, string?>
+        {
+            ["Environment"] = "Local", ["MsTeams:Enabled"] = "true", ["MsTeams:Errors:Enabled"] = "true",
+            ["MsTeams:UseQueue"] = useQueue.ToString()
+        }).Build();
 
     private sealed class CapturingSender : IMsTeamsSender
     {
@@ -104,6 +123,7 @@ public class MsTeamsMigrationTests
         public string? Channel;
         public CancellationToken Token;
         public bool Accept = true;
+
         public Task<bool> SendCard(MsTeamsCard card, string channel, CancellationToken cancellationToken = default)
         {
             Card = card;
@@ -111,6 +131,7 @@ public class MsTeamsMigrationTests
             Token = cancellationToken;
             return Task.FromResult(Accept);
         }
+
         public Task<bool> SendMessage(MsTeamsMessage message, CancellationToken cancellationToken = default) =>
             SendCard(message.MsTeamsCard, message.Channel, cancellationToken);
     }
@@ -119,14 +140,23 @@ public class MsTeamsMigrationTests
     {
         public MsTeamsMessage? Message;
         public CancellationToken Token;
-        public ValueTask SendMessage<T>(T msgModel, bool useQueue = true, CancellationToken cancellationToken = default) where T : Messages.Base.Message
+
+        public ValueTask SendMessage<T>(T msgModel, bool useQueue = true, CancellationToken cancellationToken = default)
+            where T : Messages.Base.Message
         {
             Message = (MsTeamsMessage)(object)msgModel;
             Token = cancellationToken;
             return ValueTask.CompletedTask;
         }
-        public ValueTask InternalSendMessage<T>(T msg, CancellationToken cancellationToken = default) where T : Messages.Base.Message => throw new NotSupportedException();
-        public ValueTask SendMessages<T>(IList<T> msgModels, bool useQueue = true, CancellationToken cancellationToken = default) where T : Messages.Base.Message => throw new NotSupportedException();
-        public ValueTask InternalSendMessages<T>(IList<T> msgModels, CancellationToken cancellationToken = default) where T : Messages.Base.Message => throw new NotSupportedException();
+
+        public ValueTask InternalSendMessage<T>(T msg, CancellationToken cancellationToken = default)
+            where T : Messages.Base.Message => throw new NotSupportedException();
+
+        public ValueTask SendMessages<T>(IList<T> msgModels, bool useQueue = true,
+            CancellationToken cancellationToken = default) where T : Messages.Base.Message =>
+            throw new NotSupportedException();
+
+        public ValueTask InternalSendMessages<T>(IList<T> msgModels, CancellationToken cancellationToken = default)
+            where T : Messages.Base.Message => throw new NotSupportedException();
     }
 }

@@ -165,7 +165,6 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
                     }
                 ]
             },
-            NewtonsoftSerialize = false,
             Sender = EnvironmentUtil.GetMachineName(),
             CreatedAt = DateTimeOffset.UtcNow,
             Queue = "msteams",

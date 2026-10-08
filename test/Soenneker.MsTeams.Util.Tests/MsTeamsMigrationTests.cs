@@ -23,7 +23,7 @@ public class MsTeamsMigrationTests
     [Test]
     [Arguments(false)]
     [Arguments(true)]
-    public async Task SendsGeneratedCardsThroughBothRoutes(bool useQueue)
+    public async Task SendsGeneratedCardsThroughBothRoutes(bool useQueue, CancellationToken cancellationToken)
     {
         var config = CreateConfig(useQueue);
         var transmitter = new CapturingTransmitter();
@@ -82,25 +82,25 @@ public class MsTeamsMigrationTests
     }
 
     [Test]
-    public async Task ExplicitColumnsAndExceptionDefaultsReachSender()
+    public async Task ExplicitColumnsAndExceptionDefaultsReachSender(CancellationToken cancellationToken)
     {
         var config = CreateConfig(false);
         var sender = new CapturingSender();
         using var util = new MsTeamsUtil(config, new CapturingTransmitter(), new AdaptiveCardsUtil(config: config),
             NullLogger<MsTeamsUtil>.Instance, sender);
         await util.SendMessage("Table", null, new[] { 42 },
-            [new AdaptiveCardColumn<int>("Count", item => item.ToString())], "Errors");
+            [new AdaptiveCardColumn<int>("Count", item => item.ToString())], "Errors", cancellationToken: cancellationToken);
         if (sender.Card!.Attachments[0].Content!.Body.Value[2].AsVariant2().Columns.Value[0].Items.Value[0]
                   .AsVariant16().Text != "42")
             throw new Exception("Table selector was not applied.");
-        await util.SendMessage(new InvalidOperationException("Details"));
+        await util.SendMessage(new InvalidOperationException("Details"), cancellationToken: cancellationToken);
         if (sender.Channel != "Errors" ||
             sender.Card!.Attachments[0].Content!.Body.Value[0].AsVariant16().Text != "Exception thrown")
             throw new Exception("Exception defaults changed.");
         sender.Accept = false;
         try
         {
-            await util.SendMessage("Rejected", "Errors");
+            await util.SendMessage("Rejected", "Errors", cancellationToken: cancellationToken);
         }
         catch (InvalidOperationException)
         {

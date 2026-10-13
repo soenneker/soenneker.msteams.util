@@ -57,6 +57,6 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
         <PackageReference Include="Microsoft.Extensions.Primitives" Version="10.0.12" />
         <PackageReference Include="Soenneker.Extensions.Configuration" Version="4.0.902" />
-        <PackageReference Include="Soenneker.Enums.DeployEnvironment" Version="4.0.248" />
+        <PackageReference Include="Soenneker.Enums.DeployEnvironment" Version="4.0.250" />
     </ItemGroup>
 </Project>

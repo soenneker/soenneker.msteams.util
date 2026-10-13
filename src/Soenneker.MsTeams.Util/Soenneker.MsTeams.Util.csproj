@@ -47,15 +47,15 @@
 
     <ItemGroup>
         <PackageReference Include="Soenneker.AdaptiveCards.Util" Version="4.0.22" />
-        <PackageReference Include="Soenneker.Messages.MsTeams" Version="4.0.417" />
-        <PackageReference Include="Soenneker.MsTeams.Sender" Version="4.0.1032" />
-        <PackageReference Include="Soenneker.ServiceBus.Message" Version="4.0.3178" />
+        <PackageReference Include="Soenneker.Messages.MsTeams" Version="4.0.418" />
+        <PackageReference Include="Soenneker.MsTeams.Sender" Version="4.0.1040" />
+        <PackageReference Include="Soenneker.ServiceBus.Message" Version="4.0.3182" />
         <PackageReference Include="Soenneker.ServiceBus.Transmitter" Version="4.0.3983" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.12" />
-        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.12" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.12" />
-        <PackageReference Include="Microsoft.Extensions.Primitives" Version="10.0.12" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.13" />
+        <PackageReference Include="Microsoft.Extensions.Primitives" Version="10.0.13" />
         <PackageReference Include="Soenneker.Extensions.Configuration" Version="4.0.903" />
         <PackageReference Include="Soenneker.Enums.DeployEnvironment" Version="4.0.251" />
     </ItemGroup>

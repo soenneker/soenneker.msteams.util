@@ -49,7 +49,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         _serviceBusTransmitter = servicesBusTransmitter;
         _adaptiveCardUtil = adaptiveCardUtil;
 
-        _isLocal = string.Equals(config.GetValueStrict<string>(_environmentKey), DeployEnvironment.Local, StringComparison.OrdinalIgnoreCase);
+        _isLocal = string.Equals(config.GetStringStrict(_environmentKey), DeployEnvironment.Local, StringComparison.OrdinalIgnoreCase);
 
         _reloadRegistration = ChangeToken.OnChange(config.GetReloadToken, _channelEnabledCache.Clear);
     }
@@ -185,7 +185,7 @@ public sealed class MsTeamsUtil : IMsTeamsUtil
         return _channelEnabledCache.GetOrAdd(channel, static (ch, state) =>
         {
             MsTeamsUtil self = state!;
-            var enabled = self._config.GetValueStrict<bool>($"{_msTeamsPrefix}{ch}:Enabled");
+            var enabled = bool.Parse(self._config.GetStringStrict($"{_msTeamsPrefix}{ch}:Enabled"));
 
             if (!enabled && self._logger.IsEnabled(LogLevel.Debug))
                 Logs.LogSkippingChannel(self._logger, null);
